@@ -5,8 +5,7 @@
 ## Example
 #### app.py
     # -*- coding: utf-8 -*-
-    from .fyws import *
-    import orjson
+    from .fyws import *    
     
     fy_ws = FyWS()
     
