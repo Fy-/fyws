@@ -1,3 +1,4 @@
+
 # fyws
  Simple Trio WS server with users, chans & relatives
  Please note that I spent 1 hour on this, but if you're interested let me know.
@@ -28,4 +29,8 @@
     	await Chan.get('loltest).send({'message': 'welcome'})
     	
 
-And after that from .app import create_app, my_app = create_app() / trio.run(my_app.run)
+And after that 
+
+    from .app import create_app
+    my_app = create_app()
+    trio.run(my_app.run)
