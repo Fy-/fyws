@@ -9,6 +9,8 @@ class User(object):
 		self.auth = False
 		self.relatives 	= set()
 		self.channels  	= set()
+		self.properties = {}
+		
 		FyWSData.add_user(self)
 
 	def quit(self):
