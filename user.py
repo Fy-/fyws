@@ -5,7 +5,7 @@ import orjson
 class User(object):
 	def __init__(self, conn=None):
 		self.conn = conn
-		self.uuid = self.conn._id
+		self.uuid = self.conn._id+42
 		self.auth = False
 		self.relatives 	= set()
 		self.channels  	= set()
@@ -33,7 +33,7 @@ class User(object):
 			self.channels.add(chan)
 			chan.join(self)
 
-	def part(self, chan):
+	def leave(self, chan):
 		if chan in self.channels:
 			self.channels.discard(chan)
 			chan.leave(self)
