@@ -5,7 +5,6 @@ import orjson
 from functools import wraps
 
 import ssl
-import pathlib
 
 
 from .defaults import fy_ws_default_config
@@ -32,7 +31,7 @@ class FyWS(object):
 		self.created = datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
 		print('*** Flold server, created at %s' % self.created)
 
-	def init_app(self, config={}):
+	def init_app(self, config):
 		self.get_config(config)
 		
 	def register_blueprint(self, blueprint):
@@ -61,12 +60,13 @@ class FyWS(object):
 				await self.commands[data['command']](ws, data)
 
 	def get_config(self, config):
-		self.config = fy_ws_default_config
+		self.config = config
 		self.host = self.config.get('host') or fy_ws_default_config['host']
 		self.port = self.config.get('port') or fy_ws_default_config['port']
 		self.debug = self.config.get('debug') or fy_ws_default_config['debug']
-		self.ssl_pem = self.config.get('ssl_pem') or fy_ws_default_config['ssl_pem']
-
+		self.ssl_pem = self.config.get('ssl_pem', False)
+		print(config)
+		print(self.ssl_pem)
 	async def server(self, request):
 		ws = await request.accept()
 		user = User(ws)
@@ -76,7 +76,6 @@ class FyWS(object):
 			try:
 				message = await ws.get_message()
 				await self.on_message(user, message)
-				# send&co
 			except ConnectionClosed:
 				if self.callbacks.get('on_quit', False):
 					await self.callbacks.get('on_quit')(user)
@@ -87,9 +86,8 @@ class FyWS(object):
 		await serve_websocket(self.server, self.host, self.port, ssl_context=None)
 
 	async def run_ssl(self):
-		ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-		if self.ssl_pem:
-			ssl_context.load_cert_chain(self.ssl_pem)
-
-		await serve_websocket(self.server, self.host, self.port, ssl_context=None)
+		ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+		print(self.ssl_pem, self.port, self.host)
+		ssl_context.load_cert_chain(self.ssl_pem)
+		await serve_websocket(self.server, self.host, self.port, ssl_context=ssl_context)
 
