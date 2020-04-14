@@ -36,7 +36,7 @@ class Chan(object):
 	async def send(self, data, me=False):
 		_users = self.users.copy()
 		for _user in _users:
-			if me != _user:
+			if _user != self or me == True:
 				await _user.send(data)
 		del _users
 

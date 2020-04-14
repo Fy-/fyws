@@ -7,6 +7,7 @@ from functools import wraps
 import ssl
 
 
+
 from .defaults import fy_ws_default_config
 from .user import User
 
@@ -65,8 +66,7 @@ class FyWS(object):
 		self.port = self.config.get('port') or fy_ws_default_config['port']
 		self.debug = self.config.get('debug') or fy_ws_default_config['debug']
 		self.ssl_pem = self.config.get('ssl_pem', False)
-		print(config)
-		print(self.ssl_pem)
+
 	async def server(self, request):
 		ws = await request.accept()
 		user = User(ws)
@@ -77,9 +77,15 @@ class FyWS(object):
 				message = await ws.get_message()
 				await self.on_message(user, message)
 			except ConnectionClosed:
-				if self.callbacks.get('on_quit', False):
-					await self.callbacks.get('on_quit')(user)
+				try:
+					if self.callbacks.get('on_quit', False):
+						await self.callbacks.get('on_quit')(user)
+				except Exception as e:
+					print('\t *** Error on quit callback: %s' % e)
 				user.quit()
+				break
+			except Exception as e:
+				print('\t *** Unknown error %s' %e)
 				break
 
 	async def run(self):
@@ -87,7 +93,6 @@ class FyWS(object):
 
 	async def run_ssl(self):
 		ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-		print(self.ssl_pem, self.port, self.host)
 		ssl_context.load_cert_chain(self.ssl_pem)
 		await serve_websocket(self.server, self.host, self.port, ssl_context=ssl_context)
 

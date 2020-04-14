@@ -39,8 +39,11 @@ class User(object):
 			chan.leave(self)
 
 	async def send(self, data):
-		r = await self.conn.send_message(orjson.dumps(data).decode('utf-8'))
-
+		try:
+			await self.conn.send_message(orjson.dumps(data).decode('utf-8'))
+		except Exception as e:
+			print('\t *** Error sending to %s: %s' % (self, e))
+			
 	async def send_relatives(self, data, me=True):
 		_relatives = self.relatives.copy()
 		for relative in _relatives:
