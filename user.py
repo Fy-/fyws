@@ -24,7 +24,7 @@ class User(object):
 		del _relatives
 
 		FyWSData.del_user(self)
-		self.conn.close()
+		self.conn.aclose(reason='rq')
 
 	def __str__(self):
 		return 'User (%s - %s)' % (self.uuid, self.auth)
