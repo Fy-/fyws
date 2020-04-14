@@ -13,7 +13,7 @@ class User(object):
 		
 		FyWSData.add_user(self)
 
-	def quit(self):
+	async def quit(self):
 		for channel in self.channels:
 			channel.users.discard(self)
 
@@ -24,7 +24,7 @@ class User(object):
 		del _relatives
 
 		FyWSData.del_user(self)
-		self.conn.aclose(reason='rq')
+		await self.conn.aclose(reason='rq')
 
 	def __str__(self):
 		return 'User (%s - %s)' % (self.uuid, self.auth)
@@ -44,7 +44,7 @@ class User(object):
 			await self.conn.send_message(orjson.dumps(data).decode('utf-8'))
 		except Exception as e:
 			print('\t *** Error sending to %s: %s' % (self, e))
-			self.quit()
+			await self.quit()
 
 	async def send_relatives(self, data, me=True):
 		_relatives = self.relatives.copy()
