@@ -82,7 +82,7 @@ class FyWS(object):
 						await self.callbacks.get('on_quit')(user)
 				except Exception as e:
 					print('\t *** Error on quit callback: %s' % e)
-				user.quit()
+				await user.quit()
 				break
 			except Exception as e:
 				print('\t *** Unknown error %s' %e)
