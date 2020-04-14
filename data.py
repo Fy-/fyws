@@ -12,7 +12,8 @@ class FyWSData(object):
 	@staticmethod
 	def del_user(user):
 		print('\t del user: %s' % user)
-		del FyWSData.all_users[user.uuid]
+		if user.uuid in FyWSData.all_users:
+			del FyWSData.all_users[user.uuid]
 
 	@staticmethod
 	def add_chan(chan):
@@ -22,5 +23,6 @@ class FyWSData(object):
 	@staticmethod
 	def del_chan(chan):
 		print('\t del chan: %s' % chan)
-		del FyWSData.chans[chan.name]
+		if chan.name in FyWSData.chans:
+			del FyWSData.chans[chan.name]
 
