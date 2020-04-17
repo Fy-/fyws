@@ -3,6 +3,8 @@ class FyWSData(object):
 	all_users = {}
 	logged_users = {}
 	chans = {}
+	callbacks = {}
+	commands = {}
 
 	@staticmethod
 	def add_user(user):

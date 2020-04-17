@@ -3,17 +3,15 @@ from trio_websocket import serve_websocket, ConnectionClosed
 import datetime
 import orjson
 from functools import wraps
-
-import ssl
-
-
-
+import ssl, sys, traceback
 from .defaults import fy_ws_default_config
 from .user import User
+from .data import FyWSData
 
 class FyWSBlueprint(object):
 	def __init__(self):
 		self.commands = {}
+		self.callbacks = {}
 
 	def command(self, cmd):
 		def callable(func):
@@ -25,20 +23,6 @@ class FyWSBlueprint(object):
 
 		return callable
 
-class FyWS(object):
-	def __init__(self):
-		self.commands = {}
-		self.callbacks = {}
-		self.created = datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-		print('*** Flold server, created at %s' % self.created)
-
-	def init_app(self, config):
-		self.get_config(config)
-		
-	def register_blueprint(self, blueprint):
-		for command in blueprint.commands.keys():
-			self.commands[command] = blueprint.commands[command]
-
 	def callback(self, cmd):
 		def callable(func):
 			@wraps(func)
@@ -49,6 +33,28 @@ class FyWS(object):
 
 		return callable
 
+class FyWS(FyWSBlueprint):
+	def __init__(self):
+		self.commands = {}
+		self.callbacks = {}
+		self.created = datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+		print('*** Flold server, created at %s' % self.created)
+
+	def init_app(self, config):
+		self.get_config(config)
+		for command in self.commands.keys():
+			FyWSData.commands[command] = self.commands[command]
+
+		for callback in self.callbacks.keys():
+			FyWSData.callbacks[callback] = self.callbacks[callback]
+
+	def register_blueprint(self, blueprint):
+		for command in blueprint.commands.keys():
+			FyWSData.commands[command] = blueprint.commands[command]
+
+		for callback in blueprint.callbacks.keys():
+			FyWSData.callbacks[callback] = blueprint.callbacks[callback]
+
 	async def on_message(self, ws, message):
 		data = False
 		try:
@@ -57,8 +63,13 @@ class FyWS(object):
 			pass
 
 		if data:
-			if 'command' in data and data['command'] in self.commands:
-				await self.commands[data['command']](ws, data)
+			if 'command' in data and data['command'] in FyWSData.commands:
+				try:
+					await FyWSData.commands[data['command']](ws, data)
+				except Exception as e:
+					exc_type, exc_value, exc_traceback = sys.exc_info()
+					print('\t *** Error on command %s - %s' % (data, e))
+					traceback.print_tb(exc_traceback, file=sys.stdout)
 
 	def get_config(self, config):
 		self.config = config
@@ -70,23 +81,25 @@ class FyWS(object):
 	async def server(self, request):
 		ws = await request.accept()
 		user = User(ws)
-		if self.callbacks.get('on_connect', False):
-			await self.callbacks.get('on_connect')(user)
+		if FyWSData.callbacks.get('on_connect', False):
+			await FyWSData.callbacks.get('on_connect')(user)
 		while True:
 			try:
 				message = await ws.get_message()
 				await self.on_message(user, message)
 			except ConnectionClosed:
-				try:
-					if self.callbacks.get('on_quit', False):
-						await self.callbacks.get('on_quit')(user)
-				except Exception as e:
-					print('\t *** Error on quit callback: %s' % e)
-				await user.quit()
 				break
 			except Exception as e:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
 				print('\t *** Unknown error %s' %e)
+				traceback.print_tb(exc_traceback, file=sys.stdout)
+
 				break
+
+		if FyWSData.callbacks.get('on_quit', False):
+			await FyWSData.callbacks.get('on_quit')(user)
+
+		await user.quit()
 
 	async def run(self):
 		await serve_websocket(self.server, self.host, self.port, ssl_context=None)

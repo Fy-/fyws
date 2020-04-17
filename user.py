@@ -14,8 +14,9 @@ class User(object):
 		FyWSData.add_user(self)
 
 	async def quit(self):
-		for channel in self.channels:
-			channel.users.discard(self)
+		_channels = self.channels.copy()
+		for channel in _channels:
+			await self.leave(channel)
 
 		_relatives = self.relatives.copy()
 		for relative in _relatives:
@@ -29,15 +30,16 @@ class User(object):
 	def __str__(self):
 		return 'User (%s - %s)' % (self.uuid, self.auth)
 
-	def join(self, chan):
+	async def join(self, chan):
 		if chan not in self.channels:
 			self.channels.add(chan)
-			chan.join(self)
+			await chan.join(self)
 
-	def leave(self, chan):
-		if chan in self.channels:
+	async def leave(self, chan):
+		_channels = self.channels.copy()
+		if chan in _channels:
+			await chan.leave(self)
 			self.channels.discard(chan)
-			chan.leave(self)
 
 	async def send(self, data):
 		try:
